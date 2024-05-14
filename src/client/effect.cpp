@@ -21,78 +21,117 @@
  */
 
 #include "effect.h"
-#include "map.h"
 #include "game.h"
+#include "map.h"
 #include <framework/core/eventdispatcher.h>
 
-void Effect::drawEffect(const Point& dest, float scaleFactor, bool animate, int offsetX, int offsetY, LightView *lightView)
-{
-    if(m_id == 0)
-        return;
+void Effect::drawEffect(const Point &dest, float scaleFactor, bool animate,
+                        int offsetX, int offsetY, LightView *lightView) {
+  if (m_id == 0)
+    return;
 
-    int animationPhase = 0;
-    if(animate) {
-        if(g_game.getFeature(Otc::GameEnhancedAnimations)) {
-            // This requires a separate getPhaseAt method as using getPhase would make all magic effects use the same phase regardless of their appearance time
-            animationPhase = rawGetThingType()->getAnimator()->getPhaseAt(m_animationTimer.ticksElapsed());
-        } else {
-            // hack to fix some animation phases duration, currently there is no better solution
-            int ticks = EFFECT_TICKS_PER_FRAME;
-            if (m_id == 33) {
-                ticks <<= 2;
-            }
+  int animationPhase = 0;
+  if (animate) {
+      // We handle the special case of using effect 77, not a default effect value
+      // so I'm using it to represent when player sprite is drawn
+      if (m_id == 77)
+      {
+          animationPhase = 0;
+      }
+      else
+      {
+          if (g_game.getFeature(Otc::GameEnhancedAnimations)) {
+              // This requires a separate getPhaseAt method as using getPhase would make
+              // all magic effects use the same phase regardless of their appearance
+              // time
+              animationPhase = rawGetThingType()->getAnimator()->getPhaseAt(
+                  m_animationTimer.ticksElapsed());
+          }
+          else {
+              // hack to fix some animation phases duration, currently there is no
+              // better solution
+              int ticks = EFFECT_TICKS_PER_FRAME;
+              if (m_id == 33) {
+                  ticks <<= 2;
+              }
 
-            animationPhase = std::min<int>((int)(m_animationTimer.ticksElapsed() / ticks), getAnimationPhases() - 1);
-        }
-    }
+              animationPhase =
+                  std::min<int>((int)(m_animationTimer.ticksElapsed() / ticks),
+                      getAnimationPhases() - 1);
+          }
+      }
+  }
+  // Update where effect is drawn to match the combat area
+  // https://github.com/edubart/otclient/pull/1216
+  int xPattern = unsigned(offsetX) % getNumPatternX();
+  xPattern = 1 - xPattern - getNumPatternX();
+  if (xPattern < 0)
+    xPattern += getNumPatternX();
 
-    int xPattern = offsetX % getNumPatternX();
-    if(xPattern < 0)
-        xPattern += getNumPatternX();
+  int yPattern = unsigned(offsetY) % getNumPatternY();
 
-    int yPattern = offsetY % getNumPatternY();
-    if(yPattern < 0)
-        yPattern += getNumPatternY();
+  if (m_id == 77)
+  {
+      // if effect id is 77, render player sprite there instaed
+      CreaturePtr player = g_game.getLocalPlayer();
+      if (player) {
+          player->rawGetThingType()->draw(dest, scaleFactor, 0, xPattern, yPattern, 0, animationPhase, lightView);
+      }
+  }
+  // If effect id is not 77, render as effect
+  else
+  {
+      rawGetThingType()->draw(dest, scaleFactor, 0, xPattern, yPattern, 0,
+          animationPhase, lightView);
+  }
 
-    rawGetThingType()->draw(dest, scaleFactor, 0, xPattern, yPattern, 0, animationPhase, lightView);
+  
 }
 
-void Effect::onAppear()
-{
-    m_animationTimer.restart();
+void Effect::onAppear() {
+  m_animationTimer.restart();
 
-    int duration = 0;
-    if(g_game.getFeature(Otc::GameEnhancedAnimations)) {
-        duration = getThingType()->getAnimator()->getTotalDuration();
-    } else {
-        duration = EFFECT_TICKS_PER_FRAME;
+  int duration = 0;
+  // This is effect id I wanted to use to display player as trail
+  if (m_id == 77)
+  {
+      duration = 2;
+      return;
+  }
+  else
+  {
+      if (g_game.getFeature(Otc::GameEnhancedAnimations)) {
+          duration = getThingType()->getAnimator()->getTotalDuration();
+      }
+      else {
+          duration = EFFECT_TICKS_PER_FRAME;
 
-        // hack to fix some animation phases duration, currently there is no better solution
-        if(m_id == 33) {
-            duration <<= 2;
-        }
+          // hack to fix some animation phases duration, currently there is no better
+          // solution
+          if (m_id == 33) {
+              duration <<= 2;
+          }
 
-        duration *= getAnimationPhases();
-    }
+          duration *= getAnimationPhases();
+      }
+  }
+  
 
-    // schedule removal
-    auto self = asEffect();
-    g_dispatcher.scheduleEvent([self]() { g_map.removeThing(self); }, duration);
+  // schedule removal
+  auto self = asEffect();
+  g_dispatcher.scheduleEvent([self]() { g_map.removeThing(self); }, duration);
 }
 
-void Effect::setId(uint32 id)
-{
-    if(!g_things.isValidDatId(id, ThingCategoryEffect))
-        id = 0;
-    m_id = id;
+void Effect::setId(uint32 id) {
+  if (!g_things.isValidDatId(id, ThingCategoryEffect))
+    id = 0;
+  m_id = id;
 }
 
-const ThingTypePtr& Effect::getThingType()
-{
-    return g_things.getThingType(m_id, ThingCategoryEffect);
+const ThingTypePtr &Effect::getThingType() {
+  return g_things.getThingType(m_id, ThingCategoryEffect);
 }
 
-ThingType *Effect::rawGetThingType()
-{
-    return g_things.rawGetThingType(m_id, ThingCategoryEffect);
+ThingType *Effect::rawGetThingType() {
+  return g_things.rawGetThingType(m_id, ThingCategoryEffect);
 }

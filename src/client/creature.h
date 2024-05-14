@@ -134,6 +134,10 @@ public:
     virtual void onDisappear();
     virtual void onDeath();
 
+    // Added access and modify function to change outfit alpha
+    float getAlpha() { return m_outfitAlpha; }
+    void setAlpha(float newAlpha) { m_outfitAlpha = newAlpha; }
+
 protected:
     virtual void updateWalkAnimation(int totalPixelsWalked, int stepDuration);
     virtual void updateWalkOffset(int totalPixelsWalked);
@@ -168,6 +172,8 @@ protected:
     stdext::boolean<false> m_passable;
     Color m_timedSquareColor;
     Color m_staticSquareColor;
+    // Allow outfit alpha to be stored on each creature, so we can render them at different opacity
+    float m_outfitAlpha;
     stdext::boolean<false> m_showTimedSquare;
     stdext::boolean<false> m_showStaticSquare;
     stdext::boolean<true> m_removed;

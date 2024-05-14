@@ -61,6 +61,7 @@ Creature::Creature() : Thing()
     m_footStep = 0;
     m_speedFormula.fill(-1);
     m_outfitColor = Color::white;
+    m_outfitAlpha = 1.f;
 }
 
 void Creature::draw(const Point& dest, float scaleFactor, bool animate, LightView *lightView)
@@ -104,7 +105,10 @@ void Creature::draw(const Point& dest, float scaleFactor, bool animate, LightVie
 
 void Creature::internalDrawOutfit(Point dest, float scaleFactor, bool animateWalk, bool animateIdle, Otc::Direction direction, LightView *lightView)
 {
-    g_painter->setColor(m_outfitColor);
+    // We change the transparency of the outfit base on local value
+    Color transparentOutfitColor = m_outfitColor;
+    transparentOutfitColor.setAlpha(m_outfitAlpha);
+    g_painter->setColor(transparentOutfitColor);
 
     // outfit is a real creature
     if(m_outfit.getCategory() == ThingCategoryCreature) {

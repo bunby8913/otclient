@@ -1084,6 +1084,28 @@ void ProtocolGame::parseMagicEffect(const InputMessagePtr& msg)
     else
         effectId = msg->getU8();
 
+    if (effectId == 77)
+    {
+        // Get the player creature pointer, create a new creature base on that, and add to the list of things for rendering
+        CreaturePtr player = g_game.getLocalPlayer();
+        if (player) {
+            CreaturePtr trailPlayer = CreaturePtr(new Creature);
+            trailPlayer->setOutfit(player->getOutfit());
+            // Calculate the alpha of this player trail effect base on its distance from the player
+            int distance = std::abs(player->getPosition().x - pos.x) + std::abs(player->getPosition().y - pos.y);
+            float alpha = (5 - distance) * 0.2f; //Adjust alpha base on distance from the player, 0.8 to 0.2
+            trailPlayer->setAlpha(alpha);
+            trailPlayer->setPosition(pos);
+            // Set the trail player to be in the same direction as the local player
+            trailPlayer->setDirection(player->getDirection());
+            // Add the trail player to the list of things to render
+            g_map.addThing(trailPlayer, pos, 1);
+            // Remove the trailplayer from thigns to render after 200ms
+            g_dispatcher.scheduleEvent([trailPlayer]() { g_map.removeThing(trailPlayer); }, 200);
+        }
+        return;
+    }
+
     if(!g_things.isValidDatId(effectId, ThingCategoryEffect)) {
         g_logger.traceError(stdext::format("invalid effect id %d", effectId));
         return;
