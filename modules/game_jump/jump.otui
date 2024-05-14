@@ -1,0 +1,13 @@
+MainWindow
+  size: 550 400
+  @onEscape: toggle()
+  !text: tr('jump game')
+
+  Button
+    id: jumpButton
+    !text: tr('Jump')
+    Width: 64
+    @onClick: ResetButton(self)
+    anchor.right:parent.right
+    anchior.top: parent.top
+    margin: 5 0 0 6

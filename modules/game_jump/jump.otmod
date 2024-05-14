@@ -1,0 +1,9 @@
+Module
+  name: game_jump
+  description: A simple jump mini game, jump button will go across the window from right to left, when clicked, the jump button will reset on the right, but the vertical location will change
+  author: Bobby Liu
+  website: https://github.com/bunby8913
+  sandboxed: true
+  scripts: [ jump.lua ]
+  @onLoad: init()
+  @onUnload: terminate()
